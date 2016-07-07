@@ -7,13 +7,13 @@ library(distr)
 NS_det <- function(observations, params, target) {
   # Setup parameters
   datalength <- length(observations)
-  n <- params$nsamples
   lf <- log(params$f)
   nparticles <- params$nparticles
+  nsamples <- params$nsamples
 
   # Minimum log-likelihood of alive particles
   lphi <- min(ll)
-  theta_samp <- matrix(nrow = n, ncol = target$dimension)
+  theta_samp <- matrix(nrow = nsamples, ncol = target$dimension)
 
   # Sample alive theta particles
   theta <- target$rprior(nparticles, target$parameters)
@@ -35,12 +35,12 @@ NS_det <- function(observations, params, target) {
 
     # Sample new alive theta; MC until within desired region
     theta[i,] <- target$rprior(1, target$parameters)
-    while(sum(target$loglikelihood_all(theta[i,], observations, target$parameters)) < lphi[t-1]) {
+    while(sum(target$loglikelihood(theta[i,], observations, target$parameters)) < lphi[t-1]) {
       theta[i,] <- target$rprior(1, target$parameters)
     }
 
     # Compute likelihood and select minimum
-    ll[i] <- sum(target$loglikelihood_all(theta[i,], observations, target$parameters))
+    ll[i] <- sum(target$loglikelihood(theta[i,], observations, target$parameters))
     lphi <- c(lphi, min(ll))
     i <- which(ll == lphi[t])[1]
     theta_samp <- rbind(theta_samp, theta[i,])
@@ -51,7 +51,7 @@ NS_det <- function(observations, params, target) {
 
   # Add remainder to Z
   mean_remainder <- mean(exp(ll[-i]))
-  Z <- Z + mean_remainder * exp(-(t+1)/N)
+  Z <- Z + mean_remainder * exp(-(t+1)/nparticles)
 
   # Compile output
   output <- list()
